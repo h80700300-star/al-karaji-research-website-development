@@ -1,0 +1,10 @@
+import Link from 'next/link'
+import {notFound} from 'next/navigation'
+import {chapters,fa,name} from '@/lib/research'
+import {Algebra,Qanat} from '@/components/labs'
+import {Timeline} from '@/components/home'
+import {publicDB} from '@/lib/public-db'
+export const dynamic='force-dynamic'
+type Props={params:Promise<{chapter:string}>}
+export async function generateMetadata({params}:Props){const c=chapters.find(c=>c.slug===(undefined as unknown));const slug=(await params).chapter;const item=chapters.find(x=>x.slug===slug);return item?{title:item.title,description:item.desc,alternates:{canonical:'/'+slug},openGraph:{title:item.title,description:item.desc,images:['/qanat.webp']}}:{}}
+export default async function Page({params}:Props){const slug=(await params).chapter;const i=chapters.findIndex(x=>x.slug===slug);if(i<0)notFound();const c=chapters[i];const {data,error}=slug==='sources'?await publicDB().from('sources').select('id,title,authors,publication,year,url,doi,description').eq('is_public',true).order('sort_order'):{data:null,error:null};return <div className="reading"><div className="kicker"><Link href="/">کرجی‌نامه</Link> / فصل ۰{fa(i+1)}</div><h1>{c.title}</h1><p>{c.desc}</p><article>{c.sections.map(([title,text])=><section key={title}><h2>{title}</h2><p>{text}</p></section>)}{slug==='mathematics'&&<Algebra/>}{slug==='water-engineering'&&<Qanat/>}{['biography','history-of-science'].includes(slug)&&<Timeline/>}{slug==='sources'?<>{error&&<p role="alert">ارتباط با کتاب‌شناسی برقرار نشد. دوباره تلاش کنید.</p>}{data?.map((s,j)=><section id={s.id} key={s.id}><small>منبع {fa(j+1)}</small><h2 dir="auto">{s.title}</h2><p dir="auto">{s.authors} · {s.publication} · {s.year}</p><p>{s.description}</p>{(s.url||s.doi)&&<a href={s.url||'https://doi.org/'+s.doi} rel="noreferrer" target="_blank">مشاهدهٔ منبع ↗</a>}</section>)}</>:<p className="subtle">برای پیگیری شواهد و خواندن متن مرجع: <Link href="/sources">کتاب‌شناسی پژوهش</Link></p>}</article><Link href={'/'+(chapters[i+1]?.slug||'')}>{chapters[i+1]?'فصل بعد: '+chapters[i+1].title:'بازگشت به صفحه اصلی'} ←</Link></div>}
